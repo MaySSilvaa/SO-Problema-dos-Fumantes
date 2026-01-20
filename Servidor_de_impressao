@@ -1,0 +1,87 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+#include <time.h>
+
+// semaforos
+sem_t impressora_livre;
+sem_t usuario1;
+sem_t usuario2;
+sem_t usuario3;
+
+// spooler de impressao
+void* spooler(void* arg) {
+    while (1) {
+        sem_wait(&impressora_livre); // espera impressora ficar livre
+
+        int escolha = rand() % 3; // escolhe qual usuario vai imprimir
+
+        if (escolha == 0) {
+            printf("\n[SPOOLER] Liberou a impressora para o Usuario 1.\n");
+            sem_post(&usuario1);
+        } else if (escolha == 1) {
+            printf("\n[SPOOLER] Liberou a impressora para o Usuario 2.\n");
+            sem_post(&usuario2);
+        } else {
+            printf("\n[SPOOLER] Liberou a impressora para o Usuario 3.\n");
+            sem_post(&usuario3);
+        }
+
+        sleep(1);
+    }
+}
+
+// usuarios
+void* usuario_1(void* arg) {
+    while (1) {
+        sem_wait(&usuario1);
+        printf("Usuario 1: Imprimindo documento...\n");
+        sleep(2);
+        printf("Usuario 1: Impressao finalizada.\n");
+        sem_post(&impressora_livre);
+    }
+}
+
+void* usuario_2(void* arg) {
+    while (1) {
+        sem_wait(&usuario2);
+        printf("Usuario 2: Imprimindo documento...\n");
+        sleep(2);
+        printf("Usuario 2: Impressao finalizada.\n");
+        sem_post(&impressora_livre);
+    }
+}
+
+void* usuario_3(void* arg) {
+    while (1) {
+        sem_wait(&usuario3);
+        printf("Usuario 3: Imprimindo documento...\n");
+        sleep(2);
+        printf("Usuario 3: Impressao finalizada.\n");
+        sem_post(&impressora_livre);
+    }
+}
+
+int main() {
+    srand(time(NULL));
+
+    // inicializa semaforos
+    sem_init(&impressora_livre, 0, 1);
+    sem_init(&usuario1, 0, 0);
+    sem_init(&usuario2, 0, 0);
+    sem_init(&usuario3, 0, 0);
+
+    pthread_t s, u1, u2, u3;
+
+    // cria threads
+    pthread_create(&s, NULL, spooler, NULL);
+    pthread_create(&u1, NULL, usuario_1, NULL);
+    pthread_create(&u2, NULL, usuario_2, NULL);
+    pthread_create(&u3, NULL, usuario_3, NULL);
+
+    pthread_join(s, NULL);
+
+    return 0;
+}
